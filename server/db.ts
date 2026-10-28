@@ -2,16 +2,33 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 
-const DB_DIR = path.resolve(process.cwd(), 'data');
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY);
+const DB_DIR = isServerless ? '/tmp/clienthunter-data' : path.resolve(process.cwd(), 'data');
+
 if (!fs.existsSync(DB_DIR)) {
   fs.mkdirSync(DB_DIR, { recursive: true });
 }
 
 const DB_PATH = path.join(DB_DIR, 'clienthunter.db');
+
+// In serverless environments (like Vercel), copy pre-seeded database if available
+if (isServerless && !fs.existsSync(DB_PATH)) {
+  const seedDbPath = path.resolve(process.cwd(), 'data', 'clienthunter.db');
+  if (fs.existsSync(seedDbPath)) {
+    try {
+      fs.copyFileSync(seedDbPath, DB_PATH);
+    } catch {}
+  }
+}
+
 export const db = new Database(DB_PATH);
 
 // Enable WAL mode for better concurrency and performance
-db.pragma('journal_mode = WAL');
+if (!isServerless) {
+  try {
+    db.pragma('journal_mode = WAL');
+  } catch {}
+}
 db.pragma('foreign_keys = ON');
 
 export function initDatabase() {

@@ -21,12 +21,10 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-async function startServer() {
-  const app = express();
-  const PORT = Number(process.env.PORT) || 3000;
+export const app = express();
 
-  app.use(express.json({ limit: '10mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
   // --- API ROUTES ---
 
@@ -1421,26 +1419,33 @@ async function startServer() {
     }
   });
 
-  // --- VITE DEV MIDDLEWARE OR STATIC SERVING ---
-  if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.resolve(__dirname, 'dist')));
-    app.get('*', (_req: Request, res: Response) => {
-      res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
+  async function startServer() {
+    const PORT = Number(process.env.PORT) || 3000;
+
+    // --- VITE DEV MIDDLEWARE OR STATIC SERVING ---
+    if (process.env.NODE_ENV === 'production') {
+      app.use(express.static(path.resolve(__dirname, 'dist')));
+      app.get('*', (_req: Request, res: Response) => {
+        res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
+      });
+    } else {
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: 'spa',
+      });
+      app.use(vite.middlewares);
+    }
+
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`[Nexamor ClientHunter AI] Server running on port ${PORT}`);
     });
-  } else {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[Nexamor ClientHunter AI] Server running on port ${PORT}`);
-  });
-}
+  if (!process.env.VERCEL) {
+    startServer().catch((err) => {
+      console.error('Failed to start server:', err);
+      process.exit(1);
+    });
+  }
 
-startServer().catch((err) => {
-  console.error('Failed to start server:', err);
-  process.exit(1);
-});
+  export default app;

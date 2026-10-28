@@ -135,10 +135,21 @@ export const DiscoveryView: React.FC<DiscoveryViewProps> = ({
         }),
       });
 
-      const data = await response.json();
+      let data: any;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(
+          response.status === 404
+            ? 'API endpoint /api/discovery/search returned 404. Ensure your hosting environment runs the Express server.'
+            : `Server returned non-JSON response (${response.status}): ${text.slice(0, 100)}`
+        );
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Discovery search failed');
+        throw new Error(data?.error || `Discovery search failed (HTTP ${response.status})`);
       }
 
       onSearchComplete(data.businesses || [], data.diagnostics);
