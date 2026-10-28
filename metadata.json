@@ -1,0 +1,8 @@
+{
+  "name": "Remix Nexamor ClientHunter AI",
+  "description": "Australian business prospecting and AI automation sales intelligence platform for discovering businesses, assessing voice and appointment workflow automation opportunities, scoring qualified leads, and managing targeted outreach.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
